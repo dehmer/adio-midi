@@ -1,0 +1,896 @@
+Adio GT/BS, Adio Air GT/BS MIDI Implementation    Revision 1.00 (17 May 2017)
+
+
+
+1.TRANSMITTED DATA
+
+1-1 UNIVERSAL SYSTEM EXCLUSIVE MESSAGE
+
+ DEVICE INQUIRY REPLY
++--------+------------------------------------------------------------+
+|  Byte  |               Description                                  |
+|  [hex] |                                                            |
++--------+------------------------------------------------------------+
+|   F0   | Exclusive Status                                           |
+|   7E   | Non Realtime Message                                       |
+|   00   | Device ID (MIDI Channel)                                   |
+|   06   | Inquiry Message                                            |
+|   02   | Identity reply                                             |
+|   42   | KORG ID                               ( Manufacturers ID ) |
+|   41   | Adio / Adio Air GT/BS ID              ( Family ID   (LSB)) |
+|   01   |                                       ( Family ID   (MSB)) |
+|   mm   | 00:GT / 08:BS / 10:Air GT / 18:Air BS ( Member ID   (LSB)) |
+|   00   |                                       ( Member ID   (MSB)) |
+|   vv   | 00~                                   ( Minor Ver.  (LSB)) |
+|   00   |                                       ( Minor Ver.  (MSB)) |
+|   vv   | 01~                                   ( Major Ver.  (LSB)) |
+|   00   |                                       ( Major Ver.  (MSB)) |
+|   F7   | End of Exclusive                                           |
++--------+------------------------------------------------------------+
+
+  This message is transmitted whenever a INQUIRY MESSAGE REQUEST is received.
+
+
+1-2 KORG SYSTEM EXCLUSIVE MESSAGE
++--------+----------------------------------+
+|  Byte  |          Description             |
+|  [hex] |                                  |
++--------+----------------------------------+
+|   F0   | Exclusive Status                 |
+|   42   | KORG ID                          |
+|   30   | Format ID                        |
+|   00   | Adio GT/BS ID                    |
+|   01   |                                  |
+|   41   |                                  |
+|   ff   | Function Code                    |
+|  (dd)  | Data                             |
+|   F7   | End of Exclusive                 |
++--------+----------------------------------+
+
+  See 3.KORG SYSTEM EXCLUSIVE MESSAGE FORMAT for more info.
+
+
+
+2. RECOGNIZED RECEIVE DATA
+
+2-1 UNIVERSAL SYSTEM EXCLUSIVE MESSAGE
+
+ DEVICE INQUIRY MESSAGE REQUEST
++--------+----------------------+
+|  Byte  |     Description      |
+|  [hex] |                      |
++--------+----------------------+
+|   F0   | Exclusive Status     |
+|   7E   | Non Realtime Message |
+|   nn   | Device ID            |
+|   06   | Inquiry Message      |
+|   01   | Inquiry Request      |
+|   F7   | End of Exclusive     |
++--------+----------------------+
+
+ nn = 00 :MIDI Channel
+    = 7F :Any Channel
+
+
+2-2 KORG SYSTEM EXCLUSIVE MESSAGE
++--------+----------------------------------+
+|  Byte  |          Description             |
+|  [hex] |                                  |
++--------+----------------------------------+
+|   F0   | Exclusive Status                 |
+|   42   | KORG ID                          |
+|   30   | Format ID                        |
+|   00   | Adio GT/BS ID                    |
+|   01   |                                  |
+|   41   |                                  |
+|   ff   | Function Code                    |
+|  (dd)  | Data                             |
+|   F7   | End of Exclusive                 |
++--------+----------------------------------+
+
+  See 3.KORG SYSTEM EXCLUSIVE MESSAGE FORMAT for more info.
+
+
+
+3.KORG SYSTEM EXCLUSIVE MESSAGE FORMAT
+
+ Function Code List (R:Receive, T:Transmit)
++--------+-------------------------------------------+-----+-----------+
+|  Func  |              Description                  |  R  |     T     |
+|  [hex] |                                           |     | (*1) (*2) |
++--------+-------------------------------------------+-----+-----+-----+
+|   12   | MODE REQUEST                              |  o  |     |     |
+|        |                                           |     |     |     |
+|   10   | CURRENT PROGRAM DATA DUMP REQUEST         |  o  |     |     |
+|   19   | CURRENT AUDIO EQ DATA DUMP REQUEST        |  o  |     |     |
+|   1C   | PROGRAM DATA DUMP REQUEST                 |  o  |     |     |
+|   0E   | GLOBAL DATA DUMP REQUEST                  |  o  |     |     |
+|   1D   | AUDIO EQ DATA DUMP REQUEST                |  o  |     |     |
+|   11   | PROGRAM WRITE REQUEST                     |  o  |     |     |
+|        |                                           |     |     |     |
+|   42   | MODE DATA                                 |     |  r  |     |
+|        |                                           |     |     |     |
+|   40   | CURRENT PROGRAM DATA DUMP                 |  o  |  r  |     |
+|   49   | CURRENT AUDIO EQ DATA DUMP                |  o  |  r  |     |
+|   4C   | PROGRAM DATA DUMP                         |  o  |  r  |     |
+|   51   | GLOBAL DATA DUMP                          |     |  r  |     |
+|   4D   | AUDIO EQ DATA DUMP                        |  o  |  r  |     |
+|        |                                           |     |     |     |
+|   4E   | MODE CHANGE                               |  o  |     |  P  |
+|   41   | PARAMETER CHANGE                          |  o  |     |  C  |
+|        |                                           |     |     |     |
+|   26   | DATA FORMAT ERROR                         |     |  E  |     |
+|   23   | DATA LOAD COMPLETED                       |     |  E  |     |
+|   24   | DATA LOAD ERROR                           |     |  E  |     |
+|   21   | WRITE COMPLETED                           |     |  r  |  W  |
+|   22   | WRITE ERROR                               |     |  r  |     |
++--------+-------------------------------------------+-----+-----+-----+
+
+ *1 : Transmitted when
+      r  : Request message is received.
+      E  : Exclusive message is received.
+
+ *2 : Transmitted when
+      P  : Program is changed by Switch or Knob.
+      C  : Parameter is changed by Switch or Knob.
+      W  : DATA WRITE by Switch is completed.
+
+
+(1) MODE REQUEST                                                           R
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 12                | Function Code                                         |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message, and transmits Func=42 message.
+
+
+(2) CURRENT PROGRAM DATA DUMP REQUEST                                      R
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 10                | Function Code                                         |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message, and transmits Func=40 or Func=24 message.
+
+
+(3) CURRENT AUDIO EQ DATA DUMP REQUEST                                     R
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 19                | Function Code                                         |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message, and transmits Func=49 or Func=24 message.
+
+
+(4) PROGRAM DATA DUMP REQUEST                                              R
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 1C                | Function Code                                         |
+| 00                | (Reserved)                                            |
+| 0000 0ppp         | Program No.                                           |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message, and transmits Func=4C or Func=24 message.
+
+
+(5) GLOBAL DATA DUMP REQUEST                                               R
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 0E                | Function Code                                         |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message, and transmits Func=51 or Func=24 message.
+
+
+(6) AUDIO EQ DATA DUMP REQUEST                                             R
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 1D                | Function Code                                         |
+| 00                | (Reserved)                                            |
+| 0000 0ppp         | Audio EQ Data No. (1~4)                               |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message, and transmits Func=4D or Func=24 message.
+
+
+(7) PROGRAM WRITE REQUEST                                                  R
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 11                | Function Code                                         |
+| 00                | (Reserved)                                            |
+| 0000 0ppp         | User Program No.                                      |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message, write the data and transmits Func=21 or Func=22 message.
+
+
+(8) MODE DATA                                                              T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 42                | Function Code                                         |
+| 0000 00mm         | User(0)/Manual(2)                                     |
+| 0000 0ppp         | Program No.                                           |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives Func=12 message, and transmits this message & data.
+
+
+(9) CURRENT PROGRAM DATA DUMP                                          R , T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 40                | Function Code                                         |
+| 0ddd dddd         | Data                                       (NOTE 1,4) |
+|  :                |  :                                                    |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message & data, saves them to Current Buffer and transmits Func=23 or Func=24 message.
+ Receives Func=10 message, and transmits this message & data.
+
+
+(10) CURRENT AUDIO EQ DATA DUMP                                        R , T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 49                | Function Code                                         |
+| 0ddd dddd         | Data                                       (NOTE 3,4) |
+|  :                |  :                                                    |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message & data, saves them to Current Buffer and transmits Func=23 or Func=24 message.
+ Receives Func=19 message, and transmits this message & data.
+
+
+(11) PROGRAM DATA DUMP                                                 R , T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 4C                | Function Code                                         |
+| 00                | (Reserved)                                            |
+| 0000 0ppp         | Program No.                                           |
+| 0ddd dddd         | Data                                       (NOTE 1,4) |
+|  :                |  :                                                    |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message & data, saves them to Internal Memory and transmits Func=23 or Func=24 message.
+ Receives Func=1C message, and transmits this message & data.
+
+
+(12) GLOBAL DATA DUMP                                                      T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,3n,00,01,41 | Exclusive Header                                      |
+| 51                | Function Code                                         |
+| 0ddd dddd         | Data                                       (NOTE 2,4) |
+|  :                |  :                                                    |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives Func=0E message, and transmits this message & data.
+
+
+(13) AUDIO EQ DATA DUMP                                                R , T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 4D                | Function Code                                         |
+| 00                | (Reserved)                                            |
+| 0000 0ppp         | Audio EQ Data No. (1~4)                               |
+| 0ddd dddd         | Data                                       (NOTE 3,4) |
+|  :                |  :                                                    |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message & data, saves them to Internal Memory and transmits Func=23 or Func=24 message.
+ Receives Func=1C message, and transmits this message & data.
+
+
+(14) MODE CHANGE                                                       R , T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 4E                | Function Code                                         |
+| 0000 00mm         | User(0)/Manual(2)                                     |
+| 0000 0ppp         | Program No.                                           |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message & data, changes the Mode and transmits Func=23 or Func=24.
+ When the Mode or Program is changed by Switch, transmits this message & data.
+
+
+(15) PARAMETER CHANGE                                                  R , T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 41                | Function Code                                         |
+| 0ppp ppp          | Parameter ID                            (TABLE 1,2,3) |
+| 0sss sss          | Parameter SUB ID                        (TABLE 1,2,3) |
+| 0vvv vvv          | Value (LSB bit 6~0)                                   |
+| 0vvv vvv          | Value (MSB bit13~7)                                   |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Receives this message & data, changes a Parameter and transmits Func=23 or Func=24 message.
+ When the Parameter is changed by Switch & Knob, transmits this message & data.
+
+
+(16) DATA FORMAT ERROR                                                     T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 26                | Function Code                                         |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Transmits this message when there is an error in the MIDI IN message.
+
+
+(17) DATA LOAD COMPLETED (ACK)                                             T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 23                | Function Code                                         |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Transmits this message when DATA LOAD, PROCESSING have been completed.
+
+
+(18) DATA LOAD ERROR (NAK)                                                 T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 24                | Function Code                                         |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Transmits this message when DATA LOAD, PROCESSING have not been completed.
+
+
+(19) WRITE COMPLETED                                                       T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 21                | Function Code                                         |
+| 00                | (Reserved)                                            |
+| 0000 0ppp         | User Program No.                                      |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Transmits this message when DATA WRITE has been completed.
+
+
+(20) WRITE ERROR                                                           T
++-------------------+-------------------------------------------------------+
+|      Byte         |                   Description                         |
++-------------------+-------------------------------------------------------+
+| F0,42,30,00,01,41 | Exclusive Header                                      |
+| 22                | Function Code                                         |
+| 00                | (Reserved)                                            |
+| 0000 0ppp         | User Program No.                                      |
+| F7                | End of Exclusive                                      |
++-------------------+-------------------------------------------------------+
+ Transmits this message when DATA WRITE MIDI has not been completed.
+
+
+
+ NOTE 1: PROGRAM DATA DUMP FORMAT
+         62 bytes             = 7*8+6    -> 8*8+(1+6)   => 71 bytes
+         (TABLE 1)
+
+ NOTE 2: GLOBAL DATA DUMP FORMAT
+         16 bytes             = 7*2+2    -> 8*2+(1+2)   => 19 bytes
+         (TABLE 2)
+
+ NOTE 3: AUDIO EQ DATA DUMP FORMAT
+         18 bytes             = 7*2+4    -> 8*2+(1+4)   => 21 bytes
+         (TABLE 3)
+
+ NOTE 4: DUMP DATA CONVERSION
+
+     DATA ( 1set = 8bit x 7Byte )
+     b7     ~      b0   b7     ~      b0   b7    ~~    b0   b7     ~      b0
+     +-+-+-+-+-+-+-+-+  +-+-+-+-+-+-+-+-+  +-+-+-~~-+-+-+  +-+-+-+-+-+-+-+-+
+     | | | | | | | | |  | | | | | | | | |  | | |    | | |  | | | | | | | | |
+     +-+-+-+-+-+-+-+-+  +-+-+-+-+-+-+-+-+  +-+-+-~~-+-+-+  +-+-+-+-+-+-+-+-+
+           7n+0               7n+1          7n+2 ~~ 7n+5         7n+6
+
+      MIDI DATA ( 1set = 7bit x 8Byte )
+        b7b7b7b7b7b7b7     b6    ~     b0     b6 ~~    b0     b6    ~     b0
+     +-+-+-+-+-+-+-+-+  +-+-+-+-+-+-+-+-+  +-+-+-~~-+-+-+  +-+-+-+-+-+-+-+-+
+     |0| | | | | | | |  |0| | | | | | | |  |0| |    | | |  |0| | | | | | | |
+     +-+-+-+-+-+-+-+-+  +-+-+-+-+-+-+-+-+  +-+-+-~~-+-+-+  +-+-+-+-+-+-+-+-+
+     7n+6,5,4,3,2,1,0         7n+0          7n+1 ~~ 7n+5         7n+6
+
+
+
+[ TABLE 1 ]  PROGRAM PARAMETERS
+
+ No. : Address in the PROGRAM DATA DUMP.
+ ID  : Parameter ID, SUB ID for PARAMETER CHANGE.
++-----------+-----------------------+------------+--------------------------------+---------+
+|  No.      |  PARAMETER            |   DATA     |  VALUE                         |  ID     |
+|  [hex]    |                       |   [hex]    |                                |  [hex]  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  PROGRAM NAME (1st)   |            |                                |  00,00  |
+|   :       |          :            |   20~7E    |  ASCII code ' ' ~ '~'          |    :    |
+|  0F       |  PROGRAM NAME (16th)  |            |                                |  00,0F  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  10       |  NR SENS              |   00~04    |  Off,1~4                       |  01,00  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  11       |  EFFECT STATUS        |            |                                |         |
+|           |    b0    (reserved)   |            |                                |         |
+|           |    b1    FX 1         |   00,01    |  Off,On                        |  02,01  |
+|           |    b2    FX 2         |   00,01    |  Off,On                        |  02,02  |
+|           |    b3~7  (reserved)   |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  12       |  AMP Model            |   00~26    |                    (TABLE 1-A) |  03,00  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  13       |                       |            |                                |  04,00  |
+|   :       |  AMP Parameters       |   ??~??    |                    (TABLE 1-A) |    :    |
+|  1E       |                       |            |                                |  04,??  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  1F       |  FX 1 Type            |   00~0D    |                    (TABLE 1-1) |  03,01  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  20       |                       |            |                                |  05,00  |
+|   :       |  FX 1 Parameters      |   ??~??    |                    (TABLE 1-1) |    :    |
+|  26       |                       |            |                                |  05,??  |
++-----------+-----------------------+------------+--------------------------------+----------
+|  27       |  FX 2 Type            |   00~07    |                    (TABLE 1-2) |  03,02  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  28       |                       |            |                                |  06,00  |
+|   :       |  FX 2 Parameters      |   ??~??    |                    (TABLE 1-2) |    :    |
+|  2E       |                       |            |                                |  06,??  |
++-----------+-----------------------+------------+--------------------------------+----------
+|  2F~3D    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+
+
+
+[ TABLE 1-A ]  AMP Parameters
+
++-----------+-----------------------+------------+--------------------------------+---------+
+|   Offset  |  PARAMETER            |   DATA     |  VALUE                         |  ID     |
+|    [hex]  |                       |   [hex]    |                                |  [hex]  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  00   [GT] DELUXE CL VIBRATO                                              |
+|                  02   [GT] TWEED 4x10 BRIGHT                                              |
+|                  04   [GT] BOUTIQUE CL                                                    |
+|                  08   [GT] BRIT 1959 TREBLE                                               |
+|                  0A   [GT] BRIT 800                                                       |
+|                  0C   [GT] SL-OD                                                          |
+|                  12   [GT] BRIT VERB                                                      |
+|                  20   [BS] DELUXE CL                                                      |
+|                  23   [BS] BRIT 800                                                       |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |   00~64    |  0.0~10.0                      |  04,01  |
+|  02       |  MIDDLE               |   00~64    |  0.0~10.0                      |  04,02  |
+|  03       |  BASS                 |   00~64    |  0.0~10.0                      |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  PRESENCE             |   00~64    |  0.0~10.0                      |  04,05  |
+|  06       |  RESONANCE            |   00~64    |  0.0~10.0                      |  04,06  |
+|  07       |  BRIGHT CAP           |   00,01    |  Off,On                        |  04,07  |
+|  08       |  LOW CUT              |   00,01    |  Off,On                        |  04,08  |
+|  09       |  MID BOOST            |   00,01    |  Off,On                        |  04,09  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  01   [GT] DELUXE CL NORMAL                                               |
+|                  03   [GT] TWEED 4x10 NORMAL                                              |
+|                  05   [GT] BOUTIQUE OD                                                    |
+|                  09   [GT] BRIT 1959 NORMAL                                               |
+|                  0B   [GT] BRIT VM                                                        |
+|                  0D   [GT] DOUBLE REC                                                     |
+|                  0E   [GT] CALI ELATION                                                   |
+|                  0F   [GT] ERUPT III CH2                                                  |
+|                  10   [GT] ERUPT III CH3                                                  |
+|                  11   [GT] BOUTIQUE METAL                                                 |
+|                  13   [GT] ORIGINAL CL                                                    |
+|                  14   [GT] TEXAS LEAD                                                     |
+|                  24   [BS] DOUBLE REC                                                     |
+|                  25   [BS] ERUPT III CH3                                                  |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |   00~64    |  0.0~10.0                      |  04,01  |
+|  02       |  MIDDLE               |   00~64    |  0.0~10.0                      |  04,02  |
+|  03       |  BASS                 |   00~64    |  0.0~10.0                      |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  PRESENCE             |   00~64    |  0.0~10.0                      |  04,05  |
+|  06       |  RESONANCE            |   00~64    |  0.0~10.0                      |  04,06  |
+|  07       |  (reserved)           |            |                                |         |
+|  08       |  LOW CUT              |   00,01    |  Off,On                        |  04,08  |
+|  09       |  MID BOOST            |   00,01    |  Off,On                        |  04,09  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  06   [GT] AC30                                                           |
+|                  07   [GT] AC30TB                                                         |
+|                  21   [BS] AC30                                                           |
+|                  22   [BS] AC30TB                                                         |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |   00~64    |  0.0~10.0                      |  04,01  |
+|  02       |  MIDDLE               |   00~64    |  0.0~10.0                      |  04,02  |
+|  03       |  BASS                 |   00~64    |  0.0~10.0                      |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  TONE                 |   00~64    |  0.0~10.0                      |  04,05  |
+|  06       |  RESONANCE            |   00~64    |  0.0~10.0                      |  04,06  |
+|  07       |  BRIGHT CAP           |   00,01    |  Off,On                        |  04,07  |
+|  08       |  LOW CUT              |   00,01    |  Off,On                        |  04,08  |
+|  09       |  MID BOOST            |   00,01    |  Off,On                        |  04,09  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  15   [GT] ACOUSTIC SIMULATOR                                             |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |   00~64    |  0.0~10.0                      |  04,01  |
+|  02       |  MIDDLE               |   00~64    |  0.0~10.0                      |  04,02  |
+|  03       |  BASS                 |   00~64    |  0.0~10.0                      |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  BODY                 |   00~64    |  0.0~10.0                      |  04,05  |
+|  06~09    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  16   [BS] CLASSIC BRIGHT                                                 |
+|                  17   [BS] CLASSIC NORMAL                                                 |
+|                  1B   [BS] MODERN                                                         |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |  00~32~64  |  -10.0~0.0~10.0                |  04,01  |
+|  02       |  MIDDLE               |  00~32~64  |  -10.0~0.0~10.0                |  04,02  |
+|  03       |  BASS                 |  00~32~64  |  -10.0~0.0~10.0                |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  (reserved)           |            |                                |         |
+|  06       |  MID FREQ             |   00~05    |  200,320,440,560,680,800 [Hz]  |  04,06  |
+|  07       |  ULTRA HI             |   00,01    |  Off,On                        |  04,07  |
+|  08~09    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  18   [BS] SLAP                                                           |
+|                  1C   [BS] DEEP                                                           |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |  00~32~64  |  -10.0~0.0~10.0                |  04,01  |
+|  02       |  MIDDLE               |  00~32~64  |  -10.0~0.0~10.0                |  04,02  |
+|  03       |  BASS                 |  00~32~64  |  -10.0~0.0~10.0                |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  (reserved)           |            |                                |         |
+|  06       |  MID FREQ             |   00~05    |  200,320,440,560,680,800 [Hz]  |  04,06  |
+|  07~09    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  19   [BS] ROCK 1                                                         |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |  00~32~64  |  -10.0~0.0~10.0                |  04,01  |
+|  02       |  MIDDLE               |  00~32~64  |  -10.0~0.0~10.0                |  04,02  |
+|  03       |  BASS                 |  00~32~64  |  -10.0~0.0~10.0                |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  PRESENCE             |   00~64    |  0.0~10.0                      |  04,05  |
+|  06       |  MID FREQ             |   00~05    |  200,320,440,560,680,800 [Hz]  |  04,06  |
+|  07       |  (reserved)           |            |                                |         |
+|  08       |  BLEND                |   00~64    |  0.0~10.0                      |  04,08  |
+|  09       |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  1A   [BS] ROCK 2                                                         |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |   00~64    |  0.0~10.0                      |  04,01  |
+|  02       |  MIDDLE               |   00~64    |  0.0~10.0                      |  04,02  |
+|  03       |  BASS                 |   00~64    |  0.0~10.0                      |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  PRESENCE             |   00~64    |  0.0~10.0                      |  04,05  |
+|  06       |  RESONANCE            |   00~64    |  0.0~10.0                      |  04,06  |
+|  07~09    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  1D   [BS] TIGHT SYNTH                                                    |
+|                  1E   [BS] DIRTY SYNTH                                                    |
+|                  1F   [BS] PUNCHY SYNTH                                                   |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  FREQUENCY            |   00~64    |  0.0~10.0                      |  04,01  |
+|  02       |  DECAY                |   00~64    |  0.0~10.0                      |  04,02  |
+|  03       |  DEPTH                |   00~64    |  0.0~10.0                      |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05       |  (reserved)           |            |                                |         |
+|  06       |  SENS                 |   00~64    |  0.0~10.0                      |  04,06  |
+|  07       |  POLARITY             |   00~01    |  Up,Down                       |  04,07  |
+|  08       |  MIX                  |   00~64    |  0.0~10.0                      |  04,08  |
+|  09       |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Model [hex]  =  26   FLAT                                                                |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  04,00  |
+|  01       |  TREBLE               |  00~32~64  |  -10.0~0.0~10.0                |  04,01  |
+|  02       |  MIDDLE               |  00~32~64  |  -10.0~0.0~10.0                |  04,02  |
+|  03       |  BASS                 |  00~32~64  |  -10.0~0.0~10.0                |  04,03  |
+|  04       |  VOLUME               |   00~64    |  0.0~10.0                      |  04,04  |
+|  05~09    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+
+
+
+[ TABLE 1-1 ]  FX 1 Parameters
+
++-----------+-----------------------+------------+--------------------------------+---------+
+|   Offset  |  PARAMETER            |   DATA     |  VALUE                         |  ID     |
+|    [hex]  |                       |   [hex]    |                                |  [hex]  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  00   COMP                                                                |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SENS                 |   00~64    |  0.0~10.0                      |  05,00  |
+|  01       |  ATTACK               |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  LEVEL                |   00~64    |  0.0~10.0                      |  05,02  |
+|  03       |  VOICE                |   00~02    |  1~3                           |  05,03  |
+|  04~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  01   T.WAH                                                               |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SENS                 |   00~64    |  0.0~10.0                      |  05,00  |
+|  01       |  DEPTH                |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  RESONANCE            |   00~64    |  0.0~10.0                      |  05,02  |
+|  03       |  FAST/SLOW            |   00,01    |  Slow,Fast                     |  05,03  |
+|  04       |  POLARITY             |   00,01    |  Up,Down                       |  05,04  |
+|  05       |  LEVEL                |   00~64    |  0.0~10.0                      |  05,05  |
+|  06       |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  02   FUZZ                                                                |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  GAIN                 |   00~64    |  0.0~10.0                      |  05,00  |
+|  01       |  TONE                 |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  VOLUME               |   00~64    |  0.0~10.0                      |  05,02  |
+|  03       |  BLEND                |   00~64    |  0.0~10.0                      |  05,03  |
+|  04~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  03   CE CHORUS                                                           |
+|                  04   STEREO CHORUS                                                       |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SPEED                |   00~64    |  0.1~10.0 [Hz]            (*3) |  05,00  |
+|  01       |  DEPTH                |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  MIX                  |   00~64    |  0.0~10.0                      |  05,02  |
+|  03~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  05   BLACK FLANGER                                                       |
+|                  06   STEREO FLANGER                                                      |
+|                  07   [GT] ORG PHASER 1 / [BS] ORG PHASER                                 |
+|                  08   ORG PHASER 2                                                        |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SPEED                |   00~64    |  0.1~10.0 [Hz]            (*3) |  05,00  |
+|  01       |  DEPTH                |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  RESONANCE            |   00~64    |  0.0~10.0                      |  05,02  |
+|  03       |  MANUAL               |   00~64    |  0.0~10.0                      |  05,03  |
+|  04~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  09   SMALL PHASE                                                         |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SPEED                |   00~64    |  0.1~10.0 [Hz]            (*3) |  05,00  |
+|  01       |  DEPTH                |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  RESONANCE            |   00,01    |  Off,On                        |  05,02  |
+|  03       |  MANUAL               |   00~64    |  0.0~10.0                      |  05,03  |
+|  04~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  0A   DUO PHASE (FREE)                                                    |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SPEED                |   00~64    |  0.1~10.0 [Hz]            (*3) |  05,00  |
+|  01       |  DEPTH                |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  RESONANCE            |   00~64    |  0.0~10.0                      |  05,02  |
+|  03       |  SERI/PARA            |   00,01    |  Serial/Parallel               |  05,03  |
+|  04       |  R SPEED              |   00~64    |  0.1~10.0 [Hz]            (*3) |  05,04  |
+|  05~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  0B   DUO PHASE (SYNC)                                                    |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SPEED                |   00~64    |  0.1~10.0 [Hz]            (*3) |  05,00  |
+|  01       |  DEPTH                |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  RESONANCE            |   00~64    |  0.0~10.0                      |  05,02  |
+|  03       |  SERI/PARA            |   00,01    |  Serial/Parallel               |  05,03  |
+|  04       |  SPREAD               |   00~64    |  0.0~10.0                      |  05,04  |
+|  05~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  0C   TWIN TREM                                                           |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SPEED                |   32~64    |  1.0~10.0 [Hz]            (*3) |  05,00  |
+|  01       |  DEPTH                |   00~64    |  0.0~10.0                      |  05,01  |
+|  02       |  DUTY                 |   00~64    |  0.0~10.0                      |  05,02  |
+|  03       |  SPREAD               |   00~64    |  0.0~10.0                      |  05,03  |
+|  04~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  0D   HARMONIC TREM                                                       |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  SPEED                |   32~64    |  1.0~10.0 [Hz]            (*3) |  05,00  |
+|  01       |  DEPTH                |   00~64    |  0.0~10.0                      |  05,01  |
+|  02~06    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+
+
+
+[ TABLE 1-2 ]  FX 2 Parameters
+
++-----------+-----------------------+------------+--------------------------------+---------+
+|   Offset  |  PARAMETER            |   DATA     |  VALUE                         |  ID     |
+|    [hex]  |                       |   [hex]    |                                |  [hex]  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  00   TAPE                                                                |
+|               =  01   A.DLY                                                               |
+|               =  02   WIDE DLY                                                            |
+|               =  03   CROSS DELAY                                                         |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00~01    |  TIME                 |   1E~3E8   |  30~1000 [ms]             (*4) |  06,00  |
+|  02       |  FEEDBACK             |   00~64    |  0.0~10.0                      |  06,01  |
+|  03       |  MIX                  |   00~64    |  0.0~10.0                      |  06,02  |
+|  04       |  HIGH DAMP            |   00~64    |  0.0~10.0                      |  06,03  |
+|  05       |  MOD SPEED            |   00~64    |  0.0~10.0                      |  06,04  |
+|  06       |  MOD DEPTH            |   00~64    |  0.0~10.0                      |  06,05  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  04   ROOM                                                                |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00~01    |  TIME                 |   82~4B0   |  130~1200 [ms]            (*4) |  06,00  |
+|  02       |  (reserved)           |            |                                |         |
+|  03       |  MIX                  |   00~64    |  0.0~10.0                      |  06,02  |
+|  04       |  PRE DELAY            |   00~46    |  0~70 [ms]                     |  06,03  |
+|  05       |  HIGH DAMP            |   00~64    |  0.0~10.0                      |  06,04  |
+|  06       |  LOW DAMP             |   00~64    |  0.0~10.0                      |  06,05  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  05   HALL                                                                |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00~01    |  TIME                 |  140~9C4   |  320~2500 [ms]            (*4) |  06,00  |
+|  02       |  (reserved)           |            |                                |         |
+|  03       |  MIX                  |   00~64    |  0.0~10.0                      |  06,02  |
+|  04       |  PRE DELAY            |   00~46    |  0~70 [ms]                     |  06,03  |
+|  05       |  HIGH DAMP            |   00~64    |  0.0~10.0                      |  06,04  |
+|  06       |  LOW DAMP             |   00~64    |  0.0~10.0                      |  06,05  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  06   SPRING                                                              |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00~01    |  TIME                 |  1CC~7D0   |  460~2000 [ms]            (*4) |  06,00  |
+|  02       |  (reserved)           |            |                                |         |
+|  03       |  MIX                  |   00~64    |  0.0~10.0                      |  06,02  |
+|  04       |  PRE DELAY            |   00~46    |  0~70 [ms]                     |  06,03  |
+|  05       |  HIGH DAMP            |   00~64    |  0.0~10.0                      |  06,04  |
+|  06       |  LOW DAMP             |   00~64    |  0.0~10.0                      |  06,05  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|                                                                                           |
+|  Type [hex]   =  07   PLATE                                                               |
+|                                                                                           |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00~01    |  TIME                 |   FA~7D0   |  250~2000 [ms]            (*4) |  06,00  |
+|  02       |  (reserved)           |            |                                |         |
+|  03       |  MIX                  |   00~64    |  0.0~10.0                      |  06,02  |
+|  04       |  PRE DELAY            |   00~46    |  0~70 [ms]                     |  06,03  |
+|  05       |  HIGH DAMP            |   00~64    |  0.0~10.0                      |  06,04  |
+|  06       |  LOW DAMP             |   00~64    |  0.0~10.0                      |  06,05  |
++-----------+-----------------------+------------+--------------------------------+---------+
+
+
+
+[ TABLE 2 ]  GLOBAL PARAMETERS
+
+ No. : Address in the GLOBAL DATA DUMP.
+ ID  : Parameter ID, SUB ID for PARAMETER CHANGE.
++-----------+-----------------------+------------+--------------------------------+---------+
+|  No.      |  PARAMETER            |   DATA     |  VALUE                         |  ID     |
+|  [hex]    |                       |   [hex]    |                                |  [hex]  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00~01    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  02       |  Wide On/Off          |   00,01    |  Off,On                        |  42,00  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  03       |  USB Audio Routing    |   00~02    |  MODE1~3                       |  43,00  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  04       |  Audio Eq Select      |   00~04    |  Off,1~4                       |  44,00  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  05~0F    |  (reserved)           |            |                                |         |
++-----------+-----------------------+------------+--------------------------------+---------+
+
+
+
+[ TABLE 3 ]  AUDIO EQ PARAMETERS
+
+ No. : Address in the AUDIO EQ DATA DUMP.
+ ID  : Parameter ID, SUB ID for PARAMETER CHANGE.
++-----------+-----------------------+------------+--------------------------------+---------+
+|  No.      |  PARAMETER            |   DATA     |  VALUE                         |  ID     |
+|  [hex]    |                       |   [hex]    |                                |  [hex]  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  00       |  Trim                 |  00~78~F0  |  -12.0~0.0~12.0 [dB]           |  60,00  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  01       |  Bassilator           |   00,01    |  Off,On                        |  61,00  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  02~03    |  Low Freq             |   28~3E8   |  40~1000 [Hz]             (*4) |  62,00  |
+|  04       |  Low Gain             |  00~18~30  |  -12.0~0.0~12.0 [dB]           |  62,01  |
+|  05       |  Low Width            |   04~0A    |   0.4~1.0                      |  62,02  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  06~07    |  Low Mid Freq         |   50~7D0   |  80~2000 [Hz]             (*4) |  63,00  |
+|  08       |  Low Mid Gain         |  00~18~30  |  -12.0~0.0~12.0 [dB]           |  63,01  |
+|  09       |  Low Mid Width        |   04~3C    |   0.4~6.0                      |  63,02  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  0A~0B    |  High Mid Freq        |  258~2710  |  600~10000 [Hz]           (*4) |  64,00  |
+|  0C       |  High Mid Gain        |  00~18~30  |  -12.0~0.0~12.0 [dB]           |  64,01  |
+|  0D       |  High Mid Width       |   04~3C    |   0.4~6.0                      |  64,02  |
++-----------+-----------------------+------------+--------------------------------+---------+
+|  0E~0F    |  High Freq            |  3E8~2AF8  |  1000~11000 [Hz]          (*4) |  65,00  |
+|  10       |  High Gain            |  00~18~30  |  -12.0~0.0~12.0 [dB]           |  65,01  |
+|  11       |  High Width           |   04~0A    |   0.4~1.0                      |  65,02  |
++-----------+-----------------------+------------+--------------------------------+---------+
+
+
+
+ *3 :  DATA[Hex]   VALUE[Hz]
+       00~09       0.100 ~ 0.145 (0.005 step)
+       0A~18       0.15  ~ 0.29  (0.01 step)
+       19~27       0.30  ~ 0.58  (0.02 step)
+       28~31       0.60  ~ 0.96  (0.04 step)
+       32~3B       1.00  ~ 1.45  (0.05 step)
+       3C~4A       1.5   ~ 2.9   (0.1 step)
+       4B~59       3.0   ~ 5.8   (0.2 step)
+       5A~63       6.0   ~ 9.6   (0.4 step)
+       64         10.0
+
+
+
+ *4 : Byte Order = little endian
+
+
+
